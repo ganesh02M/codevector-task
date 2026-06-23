@@ -2,7 +2,7 @@
 
 Browse 200,000 products (newest first), filter by category, paginate fast — with **zero duplicate/skipped items** even when data changes live.
 
-**Live Demo:** `YOUR_RENDER_URL`  
+**Live Demo:** `https://codevector-backend-oouo.onrender.com`  
 **Backend API:** `YOUR_RENDER_URL/api/products`
 
 ---
