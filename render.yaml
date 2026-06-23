@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: productvault-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: DATABASE_URL
+        sync: false   # set this manually in Render dashboard
+      - key: PORT
+        value: 3000

@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ProductVault — Browse 200k Products</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ── TOKENS ─────────────────────────────────────────── */
+    :root {
+      --bg:        #0d0d0f;
+      --surface:   #16161a;
+      --border:    #252530;
+      --muted:     #3a3a4a;
+      --text:      #e8e8f0;
+      --subtle:    #888899;
+      --accent:    #6c63ff;
+      --accent-hi: #8b85ff;
+      --green:     #22c55e;
+      --red:       #ef4444;
+      --radius:    10px;
+      --shadow:    0 4px 24px rgba(0,0,0,0.4);
+    }
+
+    /* ── RESET ──────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* ── LAYOUT ─────────────────────────────────────────── */
+    .app { max-width: 1100px; margin: 0 auto; padding: 0 20px 60px; }
+
+    /* ── HEADER ─────────────────────────────────────────── */
+    header {
+      padding: 36px 0 28px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 28px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .logo {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: var(--text);
+    }
+    .logo span { color: var(--accent); }
+    .stats-bar {
+      font-size: 13px;
+      color: var(--subtle);
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+    .stat-pill {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 12px;
+    }
+    .stat-pill b { color: var(--text); }
+
+    /* ── CONTROLS ───────────────────────────────────────── */
+    .controls {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .filter-label {
+      font-size: 12px;
+      color: var(--subtle);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 600;
+    }
+    .cat-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--subtle);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: inherit;
+      white-space: nowrap;
+    }
+    .cat-btn:hover { border-color: var(--accent); color: var(--text); }
+    .cat-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+      font-weight: 500;
+    }
+
+    /* ── RESULTS META ───────────────────────────────────── */
+    .results-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      font-size: 13px;
+      color: var(--subtle);
+    }
+    .results-meta b { color: var(--text); }
+
+    /* ── PRODUCT GRID ───────────────────────────────────── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      cursor: default;
+      transition: border-color 0.15s, transform 0.15s;
+      position: relative;
+      overflow: hidden;
+    }
+    .card:hover {
+      border-color: var(--muted);
+      transform: translateY(-2px);
+    }
+    .card-cat {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--accent-hi);
+      margin-bottom: 8px;
+    }
+    .card-name {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 12px;
+      line-height: 1.4;
+    }
+    .card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+    .card-price {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--green);
+    }
+    .card-date {
+      font-size: 11px;
+      color: var(--subtle);
+      text-align: right;
+    }
+    .card-date span { display: block; }
+
+    /* skeleton loader */
+    .card.skeleton { pointer-events: none; }
+    .skel {
+      background: linear-gradient(90deg, var(--border) 25%, var(--muted) 50%, var(--border) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: 4px;
+    }
+    .skel-cat  { height: 12px; width: 70px; margin-bottom: 10px; }
+    .skel-name { height: 18px; width: 90%; margin-bottom: 8px; }
+    .skel-name2 { height: 18px; width: 60%; margin-bottom: 16px; }
+    .skel-price { height: 22px; width: 80px; }
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* ── PAGINATION ─────────────────────────────────────── */
+    .pagination {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 22px;
+      border-radius: var(--radius);
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn:hover:not(:disabled) {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .btn.primary:hover:not(:disabled) { background: var(--accent-hi); border-color: var(--accent-hi); }
+    .page-info {
+      font-size: 13px;
+      color: var(--subtle);
+      padding: 0 8px;
+    }
+
+    /* ── EMPTY / ERROR STATES ───────────────────────────── */
+    .state-box {
+      text-align: center;
+      padding: 80px 20px;
+      color: var(--subtle);
+    }
+    .state-box .icon { font-size: 40px; margin-bottom: 16px; }
+    .state-box p { font-size: 15px; max-width: 360px; margin: 0 auto; }
+
+    /* ── LIVE BADGE ─────────────────────────────────────── */
+    .live-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--green);
+      font-weight: 500;
+    }
+    .live-dot {
+      width: 7px; height: 7px;
+      background: var(--green);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.5; transform: scale(1.3); }
+    }
+
+    /* ── TOAST ──────────────────────────────────────────── */
+    #toast {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 18px;
+      font-size: 13px;
+      color: var(--text);
+      box-shadow: var(--shadow);
+      opacity: 0;
+      transform: translateY(8px);
+      transition: all 0.25s;
+      pointer-events: none;
+      z-index: 100;
+    }
+    #toast.show { opacity: 1; transform: translateY(0); }
+
+    /* ── RESPONSIVE ─────────────────────────────────────── */
+    @media (max-width: 600px) {
+      .grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+      header { padding: 24px 0 20px; }
+      .stats-bar { display: none; }
+    }
+    @media (max-width: 400px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <!-- Header -->
+  <header>
+    <div>
+      <div class="logo">Product<span>Vault</span></div>
+    </div>
+    <div class="stats-bar">
+      <span id="total-stat" class="stat-pill"><b>—</b> products</span>
+      <div class="live-badge">
+        <div class="live-dot"></div> cursor-stable
+      </div>
+    </div>
+  </header>
+
+  <!-- Category filters -->
+  <div class="controls">
+    <span class="filter-label">Filter</span>
+    <button class="cat-btn active" data-cat="">All</button>
+  </div>
+
+  <!-- Results meta -->
+  <div class="results-meta">
+    <span id="page-info">Loading...</span>
+    <span id="cursor-info" style="font-size:11px;font-family:monospace;color:var(--muted)"></span>
+  </div>
+
+  <!-- Product grid -->
+  <div id="grid" class="grid"></div>
+
+  <!-- Pagination -->
+  <div class="pagination">
+    <button class="btn" id="btn-prev" disabled>← Prev</button>
+    <span class="page-info" id="page-num">Page 1</span>
+    <button class="btn primary" id="btn-next" disabled>Next →</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  // ── CONFIG ──────────────────────────────────────────────
+  // Replace with your deployed Render backend URL
+ const API_BASE = 'http://localhost:3000'; // ← update this before deploy
+
+  const LIMIT = 20;
+
+  // ── STATE ────────────────────────────────────────────────
+  let state = {
+    category: '',
+    page: 1,
+    cursors: [null],  // cursors[0] = null (first page), cursors[1] = cursor for page 2, etc.
+    hasMore: false,
+    loading: false,
+    total: null,
+  };
+
+  // ── DOM REFS ─────────────────────────────────────────────
+  const grid       = document.getElementById('grid');
+  const btnPrev    = document.getElementById('btn-prev');
+  const btnNext    = document.getElementById('btn-next');
+  const pageNum    = document.getElementById('page-num');
+  const pageInfo   = document.getElementById('page-info');
+  const cursorInfo = document.getElementById('cursor-info');
+  const totalStat  = document.getElementById('total-stat');
+  const toast      = document.getElementById('toast');
+
+  // ── TOAST ─────────────────────────────────────────────────
+  function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2800);
+  }
+
+  // ── SKELETON LOADER ───────────────────────────────────────
+  function showSkeletons(n = LIMIT) {
+    grid.innerHTML = Array.from({ length: n }, () => `
+      <div class="card skeleton">
+        <div class="skel skel-cat"></div>
+        <div class="skel skel-name"></div>
+        <div class="skel skel-name2"></div>
+        <div class="skel skel-price"></div>
+      </div>
+    `).join('');
+  }
+
+  // ── FORMAT HELPERS ────────────────────────────────────────
+  function formatPrice(p) {
+    return '₹' + Number(p).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+  }
+  function formatDate(iso) {
+    const d = new Date(iso);
+    return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  // ── RENDER PRODUCTS ───────────────────────────────────────
+  function renderProducts(products) {
+    if (!products.length) {
+      grid.innerHTML = `
+        <div class="state-box" style="grid-column:1/-1">
+          <div class="icon">📦</div>
+          <p>No products found${state.category ? ' in ' + state.category : ''}.</p>
+        </div>`;
+      return;
+    }
+    grid.innerHTML = products.map(p => `
+      <div class="card">
+        <div class="card-cat">${escHtml(p.category)}</div>
+        <div class="card-name">${escHtml(p.name)}</div>
+        <div class="card-footer">
+          <div class="card-price">${formatPrice(p.price)}</div>
+          <div class="card-date">
+            <span>${formatDate(p.created_at)}</span>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // ── FETCH ─────────────────────────────────────────────────
+  async function fetchProducts() {
+    if (state.loading) return;
+    state.loading = true;
+    showSkeletons();
+    btnPrev.disabled = true;
+    btnNext.disabled = true;
+
+    const cursor = state.cursors[state.page - 1]; // cursor for current page
+    const params = new URLSearchParams({ limit: LIMIT });
+    if (state.category) params.set('category', state.category);
+    if (cursor)         params.set('cursor', cursor);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/products?${params}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      renderProducts(data.data);
+      state.hasMore = data.hasMore;
+
+      // Store the nextCursor for the next page if we don't have it yet
+      if (data.hasMore && !state.cursors[state.page]) {
+        state.cursors[state.page] = data.nextCursor;
+      }
+
+      // Update UI
+      pageNum.textContent = `Page ${state.page}`;
+      pageInfo.textContent = `Showing ${data.count} products${state.category ? ' · ' + state.category : ''}`;
+      cursorInfo.textContent = cursor ? `cursor: ${cursor.slice(0,20)}…` : 'page 1 (no cursor)';
+
+      btnPrev.disabled = state.page <= 1;
+      btnNext.disabled = !data.hasMore;
+
+    } catch (err) {
+      grid.innerHTML = `
+        <div class="state-box" style="grid-column:1/-1">
+          <div class="icon">⚠️</div>
+          <p>Couldn't load products. Make sure the backend is running.</p>
+        </div>`;
+      pageInfo.textContent = 'Error loading data';
+      showToast('⚠️ Backend connection failed');
+      btnPrev.disabled = state.page <= 1;
+      btnNext.disabled = true;
+    } finally {
+      state.loading = false;
+    }
+  }
+
+  // ── LOAD STATS ────────────────────────────────────────────
+  async function loadStats() {
+    try {
+      const res = await fetch(`${API_BASE}/api/products/stats`);
+      const data = await res.json();
+      totalStat.innerHTML = `<b>${data.total.toLocaleString()}</b> products`;
+    } catch {}
+  }
+
+  // ── LOAD CATEGORIES ───────────────────────────────────────
+  async function loadCategories() {
+    try {
+      const res = await fetch(`${API_BASE}/api/products/categories`);
+      const data = await res.json();
+      const controls = document.querySelector('.controls');
+      data.categories.forEach(cat => {
+        const btn = document.createElement('button');
+        btn.className = 'cat-btn';
+        btn.dataset.cat = cat;
+        btn.textContent = cat;
+        controls.appendChild(btn);
+      });
+    } catch {}
+  }
+
+  // ── CATEGORY FILTER ───────────────────────────────────────
+  document.querySelector('.controls').addEventListener('click', (e) => {
+    const btn = e.target.closest('.cat-btn');
+    if (!btn || state.loading) return;
+
+    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    state.category = btn.dataset.cat;
+    state.page = 1;
+    state.cursors = [null];
+    state.hasMore = false;
+    fetchProducts();
+  });
+
+  // ── PREV / NEXT ───────────────────────────────────────────
+  btnPrev.addEventListener('click', () => {
+    if (state.page <= 1 || state.loading) return;
+    state.page--;
+    fetchProducts();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  btnNext.addEventListener('click', () => {
+    if (!state.hasMore || state.loading) return;
+    state.page++;
+    fetchProducts();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  // ── INIT ─────────────────────────────────────────────────
+  async function init() {
+    await Promise.all([loadCategories(), loadStats()]);
+    fetchProducts();
+  }
+
+  init();
+</script>
+</body>
+</html>
